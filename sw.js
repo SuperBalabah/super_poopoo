@@ -1,12 +1,12 @@
-// Super PoGo Radar - Service Worker for PWA
-const CACHE_NAME = 'pogo-radar-v1';
+// Super Poopoo Radar - Service Worker for PWA (Relative Path Safe)
+const CACHE_NAME = 'poopoo-radar-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/pokemon_data.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './pokemon_data.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (e) => {
@@ -31,6 +31,6 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request).catch(() => caches.match('/index.html')))
+    caches.match(e.request).then((res) => res || fetch(e.request).catch(() => caches.match('./index.html')))
   );
 });
