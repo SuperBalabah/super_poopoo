@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super PoGo Radar — 專屬雷達 PWA</title>
+  
+  <!-- PWA Metadata -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PoGo雷達">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Fonts & Map -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="radar-dot"></div>
+      <span class="nav-title">SUPER POGO RADAR</span>
+      <span class="pwa-tag">PWA</span>
+    </div>
+    <div class="nav-actions">
+      <button id="btn-install-pwa" class="btn-pwa" style="display: none;">📲 安裝應用</button>
+      <button id="btn-toggle-sidebar" class="btn-icon mobile-only" title="選單">⚙️</button>
+    </div>
+  </header>
+
+  <!-- App Main Layout -->
+  <div class="app-container">
+    <!-- Sidebar / Settings Drawer -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header mobile-only">
+        <h3>雷達控制台</h3>
+        <button id="btn-close-sidebar" class="btn-close">✕</button>
+      </div>
+
+      <!-- Quick Location Section -->
+      <section class="card-section">
+        <div class="section-title-row">
+          <span class="sec-icon">📍</span>
+          <h4>常用地點快捷</h4>
+          <button id="btn-add-location" class="btn-text-action">+ 新增自訂</button>
+        </div>
+        <div class="pills-container" id="location-pills">
+          <!-- Dynamically populated from localStorage -->
+        </div>
+
+        <div class="input-with-button mt-2">
+          <input type="text" id="center-coords" value="25.033964, 121.564468" placeholder="經度, 緯度">
+          <button id="btn-my-loc" class="btn-icon" title="定位我現在的位置">🎯</button>
+        </div>
+
+        <div class="slider-row mt-2">
+          <div class="slider-header">
+            <span>搜尋半徑</span>
+            <b id="radius-val" class="highlight-text">15 km</b>
+          </div>
+          <input type="range" id="search-radius" min="1" max="100" value="15" class="slider">
+        </div>
+      </section>
+
+      <!-- Search by Pokemon (繁體中文 / 編號) -->
+      <section class="card-section">
+        <div class="section-title-row">
+          <span class="sec-icon">🔍</span>
+          <h4>指定寶可夢 (繁體中文 / 編號)</h4>
+        </div>
+        <div class="search-input-wrapper">
+          <input type="text" id="pokemon-search" placeholder="輸入中文 (如: 快龍, 皮卡丘) 或 編號 (149)" autocomplete="off">
+          <div id="autocomplete-box" class="autocomplete-dropdown"></div>
+        </div>
+        <div class="popular-chips" id="popular-chips">
+          <span class="chip" data-id="149">快龍</span>
+          <span class="chip" data-id="248">班基拉斯</span>
+          <span class="chip" data-id="376">巨金怪</span>
+          <span class="chip" data-id="445">烈咬陸鯊</span>
+          <span class="chip" data-id="129">鯉魚王</span>
+          <span class="chip" data-id="25">皮卡丘</span>
+          <span class="chip clear" id="btn-clear-pkmn">✕ 全部</span>
+        </div>
+      </section>
+
+      <!-- IV Shortcuts & Filter -->
+      <section class="card-section">
+        <div class="section-title-row">
+          <span class="sec-icon">⭐</span>
+          <h4>IV 數值快捷</h4>
+        </div>
+        <div class="iv-shortcuts">
+          <button class="iv-btn active" data-iv="100">⭐ 100% (滿完美)</button>
+          <button class="iv-btn" data-iv="98">🔥 98%+</button>
+          <button class="iv-btn" data-iv="90">✨ 90%+</button>
+          <button class="iv-btn" data-iv="0">💀 0% (稀有廢柴)</button>
+        </div>
+        <div class="slider-row mt-2">
+          <div class="slider-header">
+            <span>自訂最低 IV 門檻</span>
+            <b id="iv-val" class="highlight-text">100%</b>
+          </div>
+          <input type="range" id="iv-slider" min="0" max="100" value="100" class="slider">
+        </div>
+      </section>
+
+      <!-- Personal Shiny Engine (Local Seed) -->
+      <section class="card-section shiny-engine-card">
+        <div class="section-title-row">
+          <span class="sec-icon">✨</span>
+          <h4>專屬色違比對 (本地運算)</h4>
+          <span class="badge-safe">🛡️ 隱私無外流</span>
+        </div>
+        <div class="seed-input-row">
+          <label for="trainer-seed">Your Trainer Seed</label>
+          <input type="text" id="trainer-seed" value="0x7f4a8b29c1e345d0" placeholder="輸入 64-bit Hex 或數值 Seed">
+        </div>
+        <label class="switch-row">
+          <span class="switch-label">僅顯示對我會觸發色違 (Shiny) 的怪</span>
+          <input type="checkbox" id="shiny-toggle">
+          <span class="switch-slider"></span>
+        </label>
+      </section>
+
+      <button id="btn-refresh-scan" class="btn-scan-main">
+        <span>⚡ 立即重新掃描雷達</span>
+      </button>
+    </aside>
+
+    <!-- Main Workspace (Map + List) -->
+    <main class="main-content">
+      <!-- Mobile Tabs Switcher -->
+      <div class="view-tabs mobile-only">
+        <button class="tab-btn active" id="tab-map">🗺️ 地圖模式</button>
+        <button class="tab-btn" id="tab-list">📋 清單模式 (<span id="tab-count">0</span>)</button>
+      </div>
+
+      <!-- Map Display Area -->
+      <div class="map-view" id="map-view-container">
+        <div id="map"></div>
+        <div class="map-stats-bar">
+          <div class="stat-pill">
+            <span class="stat-label">發現總數</span>
+            <b class="stat-val" id="stat-total">0</b>
+          </div>
+          <div class="stat-pill shiny">
+            <span class="stat-label">專屬色違</span>
+            <b class="stat-val gold" id="stat-shiny">0</b>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feed List Area -->
+      <div class="list-view" id="list-view-container">
+        <div class="list-header">
+          <h3>即時野怪追蹤清單</h3>
+          <span id="scan-status" class="status-indicator">準備就緒</span>
+        </div>
+        <div class="cards-grid" id="cards-container">
+          <!-- Dynamically inserted cards -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Custom Location Modal -->
+  <div class="modal-overlay" id="location-modal">
+    <div class="modal-content">
+      <h3>新增常用地點快捷</h3>
+      <p class="modal-sub">儲存於本機瀏覽器，筆電與手機下次開啟不需重打！</p>
+      <div class="modal-inputs">
+        <label>地點名稱 (例如: 我家、公司、公園)</label>
+        <input type="text" id="new-loc-name" placeholder="輸入名稱">
+        <label class="mt-2">經緯度 (格式: 25.0339, 121.5644)</label>
+        <input type="text" id="new-loc-coords" placeholder="例如: 25.033964, 121.564468">
+      </div>
+      <div class="modal-buttons">
+        <button id="btn-save-loc" class="btn-primary">儲存地點</button>
+        <button id="btn-cancel-loc" class="btn-ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Pokemon Dictionary -->
+  <script src="pokemon_data.js"></script>
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(console.error);
+      });
+    }
+  </script>
+</body>
+</html>

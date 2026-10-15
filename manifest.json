@@ -1,0 +1,18 @@
+{
+  "name": "Super PoGo Radar",
+  "short_name": "PoGo雷達",
+  "description": "個人專屬 Pokémon GO 雷達、100IV 追蹤與本地色違比對系統",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090d16",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%230f172a' stroke='%2306b6d4' stroke-width='6'/><circle cx='50' cy='50' r='18' fill='%23fbbf24'/><path d='M10 50h80M50 10v80' stroke='%2306b6d4' stroke-width='4'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
